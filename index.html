@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier's Law - Cylindrical Pipe Heat Conduction</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .visualization {
+            flex: 2;
+            min-width: 500px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-title {
+            color: #3498db;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .pipe-visual {
+            width: 100%;
+            height: 200px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            position: relative;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 1px solid #eaeaea;
+        }
+        
+        .pipe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pipe-inner {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .temp-label {
+            position: absolute;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .temp-label.inner {
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3498db;
+        }
+        
+        .temp-label.outer {
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #e74c3c;
+        }
+        
+        .calculation {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .equation {
+            font-family: 'Cambria Math', serif;
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .steps {
+            margin-top: 20px;
+        }
+        
+        .step {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .step:last-child {
+            border-bottom: none;
+        }
+        
+        .param-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .param-box {
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .param-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .controls, .visualization {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fourier's Law: Heat Conduction in a Cylindrical Pipe</h1>
+            <p class="subtitle">Temperature distribution and heat flux visualization for radial heat flow</p>
+        </header>
+        
+        <div class="content">
+            <div class="controls">
+                <h2 class="section-title">Pipe Parameters</h2>
+                
+                <div class="input-group">
+                    <label for="innerRadius">Inner Radius (r₁): <span id="innerRadiusValue">0.05 m</span></label>
+                    <input type="range" id="innerRadius" min="0.01" max="0.2" step="0.01" value="0.05">
+                </div>
+                
+                <div class="input-group">
+                    <label for="outerRadius">Outer Radius (r₂): <span id="outerRadiusValue">0.1 m</span></label>
+                    <input type="range" id="outerRadius" min="0.05" max="0.3" step="0.01" value="0.1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="innerTemp">Inner Temperature (T₁): <span id="innerTempValue">100 °C</span></label>
+                    <input type="range" id="innerTemp" min="0" max="300" step="5" value="100">
+                </div>
+                
+                <div class="input-group">
+                    <label for="outerTemp">Outer Temperature (T₂): <span id="outerTempValue">20 °C</span></label>
+                    <input type="range" id="outerTemp" min="0" max="100" step="5" value="20">
+                </div>
+                
+                <div class="input-group">
+                    <label for="conductivity">Thermal Conductivity (k): <span id="conductivityValue">50 W/m·K</span></label>
+                    <input type="range" id="conductivity" min="1" max="400" step="1" value="50">
+                </div>
+                
+                <div class="input-group">
+                    <label for="pipeLength">Pipe Length (L): <span id="pipeLengthValue">1 m</span></label>
+                    <input type="range" id="pipeLength" min="0.1" max="5" step="0.1" value="1">
+                </div>
+                
+                <div class="param-display">
+                    <div class="param-box">
+                        <div>Heat Transfer Rate</div>
+                        <div class="param-value" id="heatRateValue">1570.8 W</div>
+                    </div>
+                    <div class="param-box">
+                        <div>Thermal Resistance</div>
+                        <div class="param-value" id="resistanceValue">0.051 K/W</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <h2 class="section-title">Pipe Visualization & Temperature Distribution</h2>
+                
+                <div class="pipe-visual">
+                    <div class="pipe">
+                        <div class="temp-label inner" id="innerTempLabel">T₁ = 100°C</div>
+                        <div class="temp-label outer" id="outerTempLabel">T₂ = 20°C</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+                
+                <div class="calculation">
+                    <h3 class="section-title">Mathematical Solution</h3>
+                    
+                    <div class="equation">
+                        <strong>Fourier's Law for Radial Conduction:</strong><br>
+                        $$q_r = -k \cdot A \cdot \frac{dT}{dr} = -k \cdot (2\pi r L) \cdot \frac{dT}{dr}$$
+                        For steady-state with constant k: 
+                        $$T(r) = T_1 + \frac{T_2 - T_1}{\ln(r_2/r_1)} \cdot \ln(r/r_1)$$
+                        Heat transfer rate:
+                        $$Q = \frac{2\pi k L (T_1 - T_2)}{\ln(r_2/r_1)}$$
+                    </div>
+                    
+                    <div class="steps">
+                        <div class="step">
+                            <strong>Step 1: Calculate logarithmic mean radius</strong><br>
+                            <span id="step1">ln(r₂/r₁) = ln(0.1/0.05) = ln(2) = 0.693</span>
+                        </div>
+                        <div class="step">
+                            <strong>Step 2: Calculate thermal resistance</strong><br>
+                            <span id="step2">R_th = ln(r₂/r₁) / (2πkL) = 0.693 / (2π×50×1) = 0.0022 K/W</span>
+                        </div>
+                        <div class="step">
+                            <strong>Step 3: Calculate heat transfer rate</strong><br>
+                            <span id="step3">Q = (T₁ - T₂) / R_th = (100 - 20) / 0.051 = 1570.8 W</span>
+                        </div>
+                        <div class="step">
+                            <strong>Step 4: Temperature distribution function</strong><br>
+                            <span id="step4">T(r) = 100 + (20 - 100)/0.693 × ln(r/0.05) = 100 - 115.5 × ln(r/0.05)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const innerRadiusSlider = document.getElementById('innerRadius');
+        const outerRadiusSlider = document.getElementById('outerRadius');
+        const innerTempSlider = document.getElementById('innerTemp');
+        const outerTempSlider = document.getElementById('outerTemp');
+        const conductivitySlider = document.getElementById('conductivity');
+        const pipeLengthSlider = document.getElementById('pipeLength');
+        
+        const innerRadiusValue = document.getElementById('innerRadiusValue');
+        const outerRadiusValue = document.getElementById('outerRadiusValue');
+        const innerTempValue = document.getElementById('innerTempValue');
+        const outerTempValue = document.getElementById('outerTempValue');
+        const conductivityValue = document.getElementById('conductivityValue');
+        const pipeLengthValue = document.getElementById('pipeLengthValue');
+        
+        const innerTempLabel = document.getElementById('innerTempLabel');
+        const outerTempLabel = document.getElementById('outerTempLabel');
+        
+        const heatRateValue = document.getElementById('heatRateValue');
+        const resistanceValue = document.getElementById('resistanceValue');
+        
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const step4 = document.getElementById('step4');
+        
+        // Initialize Chart.js
+        const ctx = document.getElementById('temperatureChart').getContext('2d');
+        let temperatureChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Radius from center (m)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+        
+        // Function to update pipe visualization
+        function updatePipeVisualization() {
+            const innerRadius = parseFloat(innerRadiusSlider.value);
+            const outerRadius = parseFloat(outerRadiusSlider.value);
+            const innerTemp = parseFloat(innerTempSlider.value);
+            const outerTemp = parseFloat(outerTempSlider.value);
+            
+            // Update labels
+            innerTempLabel.textContent = `T₁ = ${innerTemp}°C`;
+            outerTempLabel.textContent = `T₂ = ${outerTemp}°C`;
+            
+            // Update value displays
+            innerRadiusValue.textContent = `${innerRadius.toFixed(2)} m`;
+            outerRadiusValue.textContent = `${outerRadius.toFixed(2)} m`;
+            innerTempValue.textContent = `${innerTemp} °C`;
+            outerTempValue.textContent = `${outerTemp} °C`;
+            conductivityValue.textContent = `${conductivitySlider.value} W/m·K`;
+            pipeLengthValue.textContent = `${pipeLengthSlider.value} m`;
+        }
+        
+        // Function to calculate temperature distribution
+        function calculateTemperatureDistribution() {
+            const r1 = parseFloat(innerRadiusSlider.value);
+            const r2 = parseFloat(outerRadiusSlider.value);
+            const T1 = parseFloat(innerTempSlider.value);
+            const T2 = parseFloat(outerTempSlider.value);
+            const k = parseFloat(conductivitySlider.value);
+            const L = parseFloat(pipeLengthSlider.value);
+            
+            // Calculate logarithmic term
+            const ln_r2_r1 = Math.log(r2 / r1);
+            
+            // Calculate heat transfer rate
+            const Q = (2 * Math.PI * k * L * (T1 - T2)) / ln_r2_r1;
+            
+            // Calculate thermal resistance
+            const R_th = ln_r2_r1 / (2 * Math.PI * k * L);
+            
+            // Update calculated values
+            heatRateValue.textContent = `${Q.toFixed(1)} W`;
+            resistanceValue.textContent = `${R_th.toFixed(4)} K/W`;
+            
+            // Update calculation steps
+            step1.textContent = `ln(r₂/r₁) = ln(${r2.toFixed(2)}/${r1.toFixed(2)}) = ln(${(r2/r1).toFixed(2)}) = ${ln_r2_r1.toFixed(3)}`;
+            step2.textContent = `R_th = ln(r₂/r₁) / (2πkL) = ${ln_r2_r1.toFixed(3)} / (2π×${k}×${L}) = ${R_th.toFixed(4)} K/W`;
+            step3.textContent = `Q = (T₁ - T₂) / R_th = (${T1} - ${T2}) / ${R_th.toFixed(4)} = ${Q.toFixed(1)} W`;
+            step4.textContent = `T(r) = ${T1} + (${T2} - ${T1})/${ln_r2_r1.toFixed(3)} × ln(r/${r1.toFixed(2)}) = ${T1} - ${((T1-T2)/ln_r2_r1).toFixed(1)} × ln(r/${r1.toFixed(2)})`;
+            
+            // Generate temperature distribution data
+            const radii = [];
+            const temperatures = [];
+            const steps = 20;
+            
+            for (let i = 0; i <= steps; i++) {
+                // Create a logarithmic spacing for better visualization
+                const r = r1 * Math.pow(r2/r1, i/steps);
+                radii.push(r.toFixed(3));
+                
+                // Calculate temperature at radius r
+                const T = T1 + ((T2 - T1) / ln_r2_r1) * Math.log(r / r1);
+                temperatures.push(T);
+            }
+            
+            // Update chart
+            temperatureChart.data.labels = radii;
+            temperatureChart.data.datasets[0].data = temperatures;
+            temperatureChart.update();
+        }
+        
+        // Event listeners for sliders
+        innerRadiusSlider.addEventListener('input', function() {
+            // Ensure inner radius is less than outer radius
+            if (parseFloat(this.value) >= parseFloat(outerRadiusSlider.value)) {
+                this.value = parseFloat(outerRadiusSlider.value) - 0.01;
+            }
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        outerRadiusSlider.addEventListener('input', function() {
+            // Ensure outer radius is greater than inner radius
+            if (parseFloat(this.value) <= parseFloat(innerRadiusSlider.value)) {
+                this.value = parseFloat(innerRadiusSlider.value) + 0.01;
+            }
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        innerTempSlider.addEventListener('input', function() {
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        outerTempSlider.addEventListener('input', function() {
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        conductivitySlider.addEventListener('input', function() {
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        pipeLengthSlider.addEventListener('input', function() {
+            updatePipeVisualization();
+            calculateTemperatureDistribution();
+        });
+        
+        // Initialize visualization
+        updatePipeVisualization();
+        calculateTemperatureDistribution();
+    </script>
+</body>
+</html>
